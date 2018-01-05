@@ -60,3 +60,15 @@ COMMAND(test, "run tests matching the argument") {
 COMMAND(log, "print the log") {
   log_print_all();
 }
+
+COMMAND(help, "list available commands") {
+  printf("'----> FLAG | DESCRIPTION\n");
+  FOREACH(i, command_descriptions) {
+    pair_t *entry = &command_descriptions[i];
+    char *entry_name = (char *)entry->first;
+    char *entry_desc = (char *)entry->second;
+    int entry_name_size = strlen(entry_name);
+    printf("  %*c%s | %s\n", max(0, 9 - entry_name_size), '-', entry_name, entry_desc);
+  }
+  printf("            V\n");
+}
