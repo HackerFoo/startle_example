@@ -31,6 +31,13 @@
 #include "startle/map.h"
 #include "commands.h"
 
+// declare commands
+#define COMMAND_ITEM(name, desc)                \
+  void command_##name(int arc, seg_t *argv);
+#include "command_list.h"
+#undef COMMAND_ITEM
+
+// command function table
 #define COMMAND_ITEM(name, desc)                         \
   {                                                      \
     .first = (uintptr_t)#name,                           \
@@ -41,6 +48,7 @@ static pair_t commands[] = {
 };
 #undef COMMAND_ITEM
 
+// command description table
 #define COMMAND_ITEM(name, desc)                         \
   {                                                      \
     .first = (uintptr_t)#name,                           \
@@ -68,14 +76,6 @@ bool run_command(seg_t name, int argc, seg_t *argv) {
     }
   }
   return false;
-}
-
-COMMAND(test, "run tests matching the argument") {
-  run_test(argc > 0 ? argv[0] : (seg_t){"", 0});
-}
-
-COMMAND(log, "print the log") {
-  log_print_all();
 }
 
 COMMAND(help, "list available commands") {
