@@ -73,21 +73,21 @@ COMMAND(log, "print the log") {
   log_print_all();
 }
 
-// Obviously super efficient recursive calculation of the nth Fibonacci number
-// We'll log it anyway just to be sure
+// Naive recursive calculation of the nth Fibonacci number
 int fib(int n) {
   CONTEXT("Calculating fib(%d)", n);
   assert_error(n >= 0, "must be a positive number");
-  assert_error(n < 50, "um... that's a big number");
   if(n < 2) {
     LOG("fib(%d) is obviously 1", n);
     return 1;
   } else {
+    assert_counter(10000000);
     int a = fib(n - 1);
     int b = fib(n - 2);
-    int c = a + b;
-    LOG("%d + %d = %d", a, b, c);
-    return c;
+    int r = a + b;
+    assert_error(r >= 0, "overflow");
+    LOG("%d + %d = %d", a, b, r);
+    return r;
   }
 }
 
@@ -99,15 +99,16 @@ COMMAND(fib, "calculate the Nth Fibonacci number") {
   }
 }
 
+// Memoized recursive calculation of the nth Fibonacci number
 MAP(fib_result_map, 50);
 int fib_map(int n) {
   CONTEXT("Calculating fib_map(%d)", n);
   assert_error(n >= 0, "must be a positive number");
-  assert_error(n < 50, "um... that's a big number");
   if(n < 2) {
     LOG("fib(%d) is obviously 1", n);
     return 1;
   } else {
+    assert_counter(10000000);
     pair_t *x = map_find(fib_result_map, n);
     if(x) {
       int r = x->second;
@@ -117,7 +118,9 @@ int fib_map(int n) {
       int a = fib_map(n - 1);
       int b = fib_map(n - 2);
       int r = a + b;
-      map_insert(fib_result_map, (pair_t) {n, r});
+      assert_error(r >= 0, "overflow");
+      LOG_UNLESS(map_insert(fib_result_map, (pair_t) {n, r}),
+                 NOTE("insertion failed"));
       LOG("insert fib(%d) = %d + %d = %d", n, a, b, r);
       return r;
     }
