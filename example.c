@@ -73,6 +73,33 @@ COMMAND(log, "print the log") {
   log_print_all();
 }
 
+/* How to use this:
+ * 1. Find an interesting tag (last four characters) in the log
+ * 2. Load the program in a debugger
+ * 3. Set a breakpoint on the function 'breakpoint'
+ * 4. Run again passing the log tag with this flag
+ * 5. Finish the 'breakpoint' function
+ * 6. Now you are at the log message
+ *
+ * With LLDB:
+ * $ lldb example
+ * (lldb) b breakpoint
+ * (lldb) process launch -- -watch mhdc -fib 5
+ * (lldb) finish
+ */
+COMMAND(watch, "watch for a log tag") {
+  if(argc > 0) {
+    seg_t tag = argv[0];
+    if(tag.n == sizeof(tag_t) &&
+       tag.s[0] >= 'a' &&
+       tag.s[0] <= 'z') {
+      set_log_watch(tag.s, false);
+    } else {
+      printf("invalid log tag\n");
+    }
+  }
+}
+
 // Naive recursive calculation of the nth Fibonacci number
 int fib(int n) {
   CONTEXT("Calculating fib(%d)", n);
