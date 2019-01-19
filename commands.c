@@ -32,13 +32,13 @@
 #include "commands.h"
 
 // declare commands
-#define COMMAND_ITEM(name, desc)                \
+#define COMMAND__ITEM(name, desc)               \
   void command_##name(int arc, seg_t *argv);
 #include "command_list.h"
-#undef COMMAND_ITEM
+#undef COMMAND__ITEM
 
 // command function table
-#define COMMAND_ITEM(name, desc)                         \
+#define COMMAND__ITEM(name, desc)                        \
   {                                                      \
     .first = (uintptr_t)#name,                           \
     .second = (uintptr_t)&command_##name                 \
@@ -46,10 +46,10 @@
 static pair_t commands[] = {
 #include "command_list.h"
 };
-#undef COMMAND_ITEM
+#undef COMMAND__ITEM
 
 // command description table
-#define COMMAND_ITEM(name, desc)                         \
+#define COMMAND__ITEM(name, desc)                        \
   {                                                      \
     .first = (uintptr_t)#name,                           \
     .second = (uintptr_t)desc                            \
@@ -57,7 +57,7 @@ static pair_t commands[] = {
 static pair_t command_descriptions[] = {
 #include "command_list.h"
 };
-#undef COMMAND_ITEM
+#undef COMMAND__ITEM
 
 #if INTERFACE
 #define COMMAND(name, desc) void command_##name(UNUSED int argc, UNUSED seg_t *argv)
