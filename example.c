@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "startle/types.h"
 #include "startle/macros.h"
@@ -30,6 +31,8 @@
 #include "startle/error.h"
 #include "startle/test.h"
 #include "startle/map.h"
+#include "startle/stats_types.h"
+#include "startle/stats.h"
 #include "commands.h"
 
 int main(int argc, char **argv) {
@@ -160,4 +163,127 @@ COMMAND(fib_map, "calculate the Nth Fibonacci number, with memoization") {
     int r = fib_map(x);
     printf("fib_map(%d) = %d\n", x, r);
   }
+}
+
+int64_t nanos() {
+  struct timespec ts;
+  int err = clock_gettime(CLOCK_MONOTONIC, &ts);
+  return err ? 0 : ts.tv_sec * 1000000000 + ts.tv_nsec;
+}
+
+COMMAND(time_map_insertion, "time map insertion") {
+  if(argc < 2) return;
+  int x = atoi(argv[0].s);
+  if(!INRANGE(x, 1, 30)) return;
+  int reps = atoi(argv[1].s);
+  if(!INRANGE(reps, 1, 1000)) return;
+
+  stats_reset_counters();
+
+  size_t n = (1l << x);
+
+  pair_t *data = (pair_t *)malloc(sizeof(pair_t) * n);
+  COUNTUP(i, n) {
+    //long k = REVI(i);
+    //long k = (i << 1) & (n - 1) + (i >> (x - 1));
+    long k = random();
+    //long k = (i * 1337) % (n - 1);
+    //long k = i & 1 ? REVI(i) : i;
+    data[i] = (pair_t) {k, k};
+  }
+
+  map_t map = alloc_map(n);
+
+  int64_t start = nanos();
+  uintptr_t mask = x > 12 ? (1<<(x - 5)) - 1 : 0;
+  LOOP(reps) {
+    map_clear(map);
+    COUNTUP(i, n) {
+      map_insert(map, data[i]);
+      if(mask && (i & mask) == 0) {
+        putchar('.');
+        fflush(stdout);
+      }
+    }
+  }
+  if(mask) putchar('\n');
+  int64_t stop = nanos();
+  double time = stop - start; // ns
+  printf("reps = %d, log2(n) = %d, time = %g ns\n", reps, x, time / ((double)(n * reps)));
+
+  start = nanos();
+  COUNTUP(i, n) {
+    pair_t *x = map_find(map, data[i].first);
+    assert_error(x);
+    assert_eq(x->second, data[i].first);
+    if(mask && (i & mask) == 0) {
+      putchar('.');
+      fflush(stdout);
+    }
+  }
+  if(mask) putchar('\n');
+  stop = nanos();
+  time = stop - start; // ns
+  printf("lookup time = %g ns\n", time / ((double)(n)));
+
+  start = nanos();
+  map_sort_full(map);
+  stop = nanos();
+  time = stop - start; // ns
+  printf("full sort time = %g ns\n", time / ((double)(n)));
+
+  start = nanos();
+  COUNTUP(i, n) {
+    pair_t *x = map_find_sorted(map, data[i].first);
+    assert_error(x);
+    assert_eq(x->second, data[i].first);
+    if(mask && (i & mask) == 0) {
+      putchar('.');
+      fflush(stdout);
+    }
+  }
+  if(mask) putchar('\n');
+  stop = nanos();
+  time = stop - start; // ns
+  printf("lookup time with full sort = %g ns\n", time / ((double)(n)));
+
+#if 0 // STATS
+  double avg_swaps = 
+    (double)GET_COUNTER(swap) /
+    (double)GET_COUNTER(merge);
+  double swaps_per_insert =
+    (double)GET_COUNTER(swap) /
+    (double)(n * reps);
+  double merge_per_insert =
+    (double)GET_COUNTER(merge) /
+    (double)(n * reps);
+
+  printf("avg swaps/n= %g\n", avg_swaps);
+  printf("avg swaps/insert= %g\n", swaps_per_insert);
+  printf("avg merge n/insert= %g\n", merge_per_insert);
+  printf("max depth = %lld\n", GET_COUNTER(merge_depth_max));
+  printf("ratio = %g\n", swaps_per_insert / ((double)x * x));
+  printf("search finds = %g\n", (double)GET_COUNTER(find_last) / ((double)n*x*x));
+#endif
+
+  free(map);
+  free(data);
+}
+
+#define N 256
+TEST(random_merge) {
+  pair_t arr[N];
+  COUNTUP(i, 10000) {
+    int b = random() % N;
+    //printf("b = %d, s = %d\n", b, i);
+    test_pairs(arr, LENGTH(arr), b, i);
+    merge_huang88(arr, arr + b, LENGTH(arr), key_cmp);
+    FOREACH(i, arr) {
+      if(arr[i].first != i) {
+        //print_pairs(arr, n*n);
+        assert_eq(arr[i].first, i);
+      }
+    }
+  }
+  return 0;
 }

@@ -91,6 +91,9 @@ SRC := $(wildcard *.c) $(wildcard startle/*.c)
 OBJS := $(patsubst %.c, $(BUILD_DIR)/%.o, $(SRC))
 DEPS := $(patsubst %.c, $(BUILD_DIR)/%.d, $(SRC))
 
+PPROF := ~/go/bin/pprof
+CFLAGS += -DSTATS
+
 .PHONY: example
 example: $(BUILD_DIR)/example
 	ln -fs $(BUILD_DIR)/example $@
@@ -105,3 +108,9 @@ $(BUILD_DIR)/example: $(OBJS)
 .PHONY: clean
 clean:
 	rm -rf build .gen example
+
+.PHONY: profile
+profile:
+	make BUILD=profile example
+	CPUPROFILE=example_prof.out CPUPROFILE_FREQUENCY=10000 ./example -time_map_insertion 23 1
+	$(PPROF) --pdf example example_prof.out > example_prof.pdf
