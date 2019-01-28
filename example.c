@@ -180,7 +180,8 @@ COMMAND(time_map_insertion, "time map insertion") {
 
   stats_reset_counters();
 
-  size_t n = (1l << x);
+  size_t size = (1l << x);
+  size_t n = size;
 
   pair_t *data = (pair_t *)malloc(sizeof(pair_t) * n);
   COUNTUP(i, n) {
@@ -192,7 +193,7 @@ COMMAND(time_map_insertion, "time map insertion") {
     data[i] = (pair_t) {k, k};
   }
 
-  map_t map = alloc_map(n);
+  map_t map = alloc_map(size);
 
   int64_t start = nanos();
   uintptr_t mask = x > 12 ? (1<<(x - 5)) - 1 : 0;
@@ -209,7 +210,7 @@ COMMAND(time_map_insertion, "time map insertion") {
   if(mask) putchar('\n');
   int64_t stop = nanos();
   double time = stop - start; // ns
-  printf("reps = %d, log2(n) = %d, time = %g ns\n", reps, x, time / ((double)(n * reps)));
+  printf("reps = %d, log2(n) = %d, time = %gms (%gns per)\n", reps, x, time / 1.0e6, time / ((double)(n * reps)));
 
   start = nanos();
   COUNTUP(i, n) {
@@ -224,13 +225,13 @@ COMMAND(time_map_insertion, "time map insertion") {
   if(mask) putchar('\n');
   stop = nanos();
   time = stop - start; // ns
-  printf("lookup time = %g ns\n", time / ((double)(n)));
+  printf("lookup time = %gms (%gns per)\n", time / 1.0e6, time / ((double)(n)));
 
   start = nanos();
   map_sort_full(map);
   stop = nanos();
   time = stop - start; // ns
-  printf("full sort time = %g ns\n", time / ((double)(n)));
+  printf("full sort time = %gms (%gns per)\n", time / 1.0e6, time / ((double)(n)));
 
   start = nanos();
   COUNTUP(i, n) {
@@ -245,7 +246,7 @@ COMMAND(time_map_insertion, "time map insertion") {
   if(mask) putchar('\n');
   stop = nanos();
   time = stop - start; // ns
-  printf("lookup time with full sort = %g ns\n", time / ((double)(n)));
+  printf("lookup time with full sort = %gms (%gns per)\n", time / 1.0e6, time / ((double)(n)));
 
 #if 0 // STATS
   double avg_swaps = 
